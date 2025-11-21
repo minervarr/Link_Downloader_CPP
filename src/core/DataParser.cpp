@@ -33,6 +33,7 @@ std::vector<ClassInfo> DataParser::parseFile(const std::filesystem::path& filePa
                     ClassInfo info;
                     info.subject = item.value("subject", item.value("materia", ""));
                     info.fecha = item.value("fecha", item.value("date", ""));
+                    info.horaInicio = item.value("horaInicio", item.value("startTime", ""));
                     info.url = item.value("url", item.value("link", ""));
                     info.weekNumber = item.value("weekNumber", item.value("semana", 0));
                     info.seccion = item.value("seccion", item.value("section", ""));
@@ -52,6 +53,7 @@ std::vector<ClassInfo> DataParser::parseFile(const std::filesystem::path& filePa
             ClassInfo info;
             info.subject = data.value("subject", data.value("materia", ""));
             info.fecha = data.value("fecha", data.value("date", ""));
+            info.horaInicio = data.value("horaInicio", data.value("startTime", ""));
             info.url = data.value("url", data.value("link", ""));
             info.weekNumber = data.value("weekNumber", data.value("semana", 0));
             info.seccion = data.value("seccion", data.value("section", ""));
@@ -121,6 +123,7 @@ ClassInfo DataParser::parseClassInfo(const std::string& jsonStr) {
         json data = json::parse(jsonStr);
         info.subject = data.value("subject", data.value("materia", ""));
         info.fecha = data.value("fecha", data.value("date", ""));
+        info.horaInicio = data.value("horaInicio", data.value("startTime", ""));
         info.url = data.value("url", data.value("link", ""));
         info.weekNumber = data.value("weekNumber", data.value("semana", 0));
         info.seccion = data.value("seccion", data.value("section", ""));

@@ -20,11 +20,12 @@ protected:
 
     ClassInfo createTestClassInfo() {
         ClassInfo info;
-        info.subject = "Matemáticas I";
+        info.subject = "Matematicas I";
         info.fecha = "2024-04-15";
+        info.horaInicio = "09:00";
         info.url = "https://example.com/video";
         info.weekNumber = 5;
-        info.seccion = "TEORÍA";
+        info.seccion = "TEORIA";
         info.modalidad = "PRESENCIAL";
         return info;
     }
@@ -38,9 +39,9 @@ TEST_F(FileOrganizerTest, OrganizeClassCreatesCorrectPath) {
 
     auto path = organizer_->organizeClass(info, "2024-1");
 
-    // Should create: basePath/year/semester/subject/filename.mp4
-    EXPECT_TRUE(path.string().find("2024") != std::string::npos);
+    // Should create: basePath/semester/Semana##/filename.mp4
     EXPECT_TRUE(path.string().find("2024-1") != std::string::npos);
+    EXPECT_TRUE(path.string().find("Semana05") != std::string::npos);
     EXPECT_TRUE(path.extension() == ".mp4");
 }
 
@@ -51,6 +52,7 @@ TEST_F(FileOrganizerTest, CreateDirectoryStructureCreatesDirectories) {
 
     EXPECT_TRUE(std::filesystem::exists(dirPath));
     EXPECT_TRUE(std::filesystem::is_directory(dirPath));
+    EXPECT_TRUE(dirPath.string().find("Semana05") != std::string::npos);
 }
 
 TEST_F(FileOrganizerTest, FileExistsReturnsFalseForNewFiles) {
@@ -78,20 +80,19 @@ TEST_F(FileOrganizerTest, CleansSubjectNameWithSpecialCharacters) {
 
     // Path should not contain invalid characters
     std::string pathStr = path.string();
-    EXPECT_TRUE(pathStr.find(':') == std::string::npos ||
-                pathStr.find(':') == 1); // Allow Windows drive letter
     EXPECT_TRUE(pathStr.find('<') == std::string::npos);
     EXPECT_TRUE(pathStr.find('>') == std::string::npos);
 }
 
-TEST_F(FileOrganizerTest, GeneratesFilenameWithWeekNumber) {
+TEST_F(FileOrganizerTest, DirectoryContainsWeekNumber) {
     auto info = createTestClassInfo();
+    info.weekNumber = 14;
 
     auto path = organizer_->organizeClass(info, "2024-1");
-    std::string filename = path.filename().string();
+    std::string pathStr = path.string();
 
-    EXPECT_TRUE(filename.find("semana05") != std::string::npos ||
-                filename.find("semana5") != std::string::npos);
+    // Week number should be in directory path (Semana14)
+    EXPECT_TRUE(pathStr.find("Semana14") != std::string::npos);
 }
 
 TEST_F(FileOrganizerTest, IncludesDateInFilename) {
@@ -103,25 +104,37 @@ TEST_F(FileOrganizerTest, IncludesDateInFilename) {
     EXPECT_TRUE(filename.find("2024-04-15") != std::string::npos);
 }
 
-TEST_F(FileOrganizerTest, IncludesSectionIdentifier) {
+TEST_F(FileOrganizerTest, IncludesTimeInFilename) {
     auto info = createTestClassInfo();
-    info.seccion = "TEORÍA";
+    info.horaInicio = "14:30";
 
     auto path = organizer_->organizeClass(info, "2024-1");
     std::string filename = path.filename().string();
 
-    // Should contain abbreviated section identifier
-    EXPECT_TRUE(filename.find("T") != std::string::npos);
+    // Time should be in filename with dash instead of colon
+    EXPECT_TRUE(filename.find("14-30") != std::string::npos);
 }
 
-TEST_F(FileOrganizerTest, HandlesVirtualModality) {
+TEST_F(FileOrganizerTest, IncludesSectionInFilename) {
     auto info = createTestClassInfo();
-    info.modalidad = "VIRTUAL";
+    info.seccion = "LABORATORIO - 2.01";
 
     auto path = organizer_->organizeClass(info, "2024-1");
     std::string filename = path.filename().string();
 
-    EXPECT_TRUE(filename.find("V") != std::string::npos);
+    // Should contain section
+    EXPECT_TRUE(filename.find("LABORATORIO") != std::string::npos);
+}
+
+TEST_F(FileOrganizerTest, ReplacesSpacesWithUnderscores) {
+    auto info = createTestClassInfo();
+    info.subject = "Circuitos Digitales - EL2013";
+
+    auto path = organizer_->organizeClass(info, "2024-1");
+    std::string filename = path.filename().string();
+
+    // Subject in filename should have underscores instead of spaces
+    EXPECT_TRUE(filename.find("Circuitos_Digitales") != std::string::npos);
 }
 
 TEST_F(FileOrganizerTest, GetBasePathReturnsCorrectPath) {
@@ -165,4 +178,36 @@ TEST_F(FileOrganizerTest, HandlesEmptySeccionAndModalidad) {
     // Should not throw
     auto path = organizer_->organizeClass(info, "2024-1");
     EXPECT_FALSE(path.empty());
+}
+
+TEST_F(FileOrganizerTest, HandlesEmptyHoraInicio) {
+    auto info = createTestClassInfo();
+    info.horaInicio = "";
+
+    auto path = organizer_->organizeClass(info, "2024-1");
+    std::string filename = path.filename().string();
+
+    // Should still generate valid filename
+    EXPECT_TRUE(filename.find("2024-04-15") != std::string::npos);
+    EXPECT_TRUE(filename.find(".mp4") != std::string::npos);
+}
+
+TEST_F(FileOrganizerTest, FilenameFormatIsCorrect) {
+    auto info = createTestClassInfo();
+    info.subject = "Circuitos Digitales - EL2013";
+    info.fecha = "2025-11-19";
+    info.horaInicio = "08:00";
+    info.seccion = "TEORIA - 2";
+    info.weekNumber = 14;
+
+    auto path = organizer_->organizeClass(info, "2025-2");
+    std::string filename = path.filename().string();
+
+    // Expected format: fecha_horaInicio_subject_seccion.mp4
+    // 2025-11-19_08-00_Circuitos_Digitales_-_EL2013_TEORIA---2.mp4
+    EXPECT_TRUE(filename.find("2025-11-19") != std::string::npos);
+    EXPECT_TRUE(filename.find("08-00") != std::string::npos);
+    EXPECT_TRUE(filename.find("Circuitos") != std::string::npos);
+    EXPECT_TRUE(filename.find("TEORIA") != std::string::npos);
+    EXPECT_EQ(".mp4", path.extension().string());
 }

@@ -16,6 +16,7 @@ namespace utec_downloader {
 struct ClassInfo {
     std::string subject;      ///< Course name (e.g., "Matemáticas I")
     std::string fecha;        ///< Date in YYYY-MM-DD format
+    std::string horaInicio;   ///< Start time in HH:MM format (e.g., "09:00")
     std::string url;          ///< Video URL
     int weekNumber{0};        ///< Week number in the semester
     std::string seccion;      ///< Section type: "TEORÍA", "LABORATORIO", etc.

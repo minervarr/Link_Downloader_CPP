@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <iomanip>
 #include <regex>
 
 namespace utec_downloader {
@@ -31,11 +32,11 @@ std::filesystem::path FileOrganizer::createDirectoryStructure(
     const ClassInfo& info,
     const std::string& semesterId) {
 
-    // Structure: basePath/year/semesterId/subject/
-    std::string year = info.getYear();
-    std::string cleanSubject = cleanSubjectName(info.subject);
+    // New structure: basePath/semesterId/Semana##/
+    std::ostringstream weekFolder;
+    weekFolder << "Semana" << std::setfill('0') << std::setw(2) << info.weekNumber;
 
-    std::filesystem::path fullPath = basePath_ / year / semesterId / cleanSubject;
+    std::filesystem::path fullPath = basePath_ / semesterId / weekFolder.str();
 
     if (!std::filesystem::exists(fullPath)) {
         std::filesystem::create_directories(fullPath);
@@ -49,11 +50,11 @@ bool FileOrganizer::fileExists(
     const ClassInfo& info,
     const std::string& semesterId) const {
 
-    std::string year = info.getYear();
-    std::string cleanSubject = cleanSubjectName(info.subject);
-    std::string filename = generateFilename(info);
+    std::ostringstream weekFolder;
+    weekFolder << "Semana" << std::setfill('0') << std::setw(2) << info.weekNumber;
 
-    std::filesystem::path fullPath = basePath_ / year / semesterId / cleanSubject / filename;
+    std::string filename = generateFilename(info);
+    std::filesystem::path fullPath = basePath_ / semesterId / weekFolder.str() / filename;
 
     return std::filesystem::exists(fullPath);
 }
@@ -61,25 +62,47 @@ bool FileOrganizer::fileExists(
 std::string FileOrganizer::cleanSubjectName(const std::string& subject) const {
     std::string clean = subject;
 
+    // Replace accented characters with non-accented equivalents
+    static const std::vector<std::pair<std::string, std::string>> accentMap = {
+        {"á", "a"}, {"é", "e"}, {"í", "i"}, {"ó", "o"}, {"ú", "u"},
+        {"Á", "A"}, {"É", "E"}, {"Í", "I"}, {"Ó", "O"}, {"Ú", "U"},
+        {"ñ", "n"}, {"Ñ", "N"}, {"ü", "u"}, {"Ü", "U"}
+    };
+
+    for (const auto& [from, to] : accentMap) {
+        size_t pos = 0;
+        while ((pos = clean.find(from, pos)) != std::string::npos) {
+            clean.replace(pos, from.length(), to);
+            pos += to.length();
+        }
+    }
+
     // Replace problematic characters for filesystem
     static const std::regex invalidChars(R"([<>:"/\\|?*])");
-    clean = std::regex_replace(clean, invalidChars, "_");
+    clean = std::regex_replace(clean, invalidChars, "");
 
-    // Replace multiple spaces with single space
-    static const std::regex multipleSpaces(R"(\s+)");
-    clean = std::regex_replace(clean, multipleSpaces, " ");
+    // Replace spaces with underscores
+    std::replace(clean.begin(), clean.end(), ' ', '_');
 
-    // Trim whitespace
-    auto start = clean.find_first_not_of(" ");
-    auto end = clean.find_last_not_of(" ");
+    // Replace multiple underscores with single
+    static const std::regex multipleUnderscores(R"(__+)");
+    clean = std::regex_replace(clean, multipleUnderscores, "_");
+
+    // Trim underscores from start and end
+    auto start = clean.find_first_not_of("_");
+    auto end = clean.find_last_not_of("_");
     if (start != std::string::npos) {
         clean = clean.substr(start, end - start + 1);
     }
 
     // Truncate if too long (filesystem limitations)
-    const size_t maxLength = 100;
+    const size_t maxLength = 80;
     if (clean.size() > maxLength) {
         clean = clean.substr(0, maxLength);
+        // Don't end with underscore
+        while (!clean.empty() && clean.back() == '_') {
+            clean.pop_back();
+        }
     }
 
     return clean;
@@ -88,14 +111,26 @@ std::string FileOrganizer::cleanSubjectName(const std::string& subject) const {
 std::string FileOrganizer::generateFilename(const ClassInfo& info) const {
     std::ostringstream oss;
 
-    // Format: subject_week##_date_identifier.mp4
-    oss << cleanSubjectName(info.subject);
-    oss << "_semana" << std::setfill('0') << std::setw(2) << info.weekNumber;
-    oss << "_" << info.fecha;
+    // Format: fecha_horaInicio_subject_seccion.mp4
+    // Example: 2025-11-19_08-00_Circuitos_Digitales-EL2013_TEORIA-2.mp4
 
-    std::string identifier = determineIdentifier(info);
-    if (!identifier.empty()) {
-        oss << "_" << identifier;
+    // Date
+    oss << info.fecha;
+
+    // Time (replace : with -)
+    if (!info.horaInicio.empty()) {
+        std::string time = info.horaInicio;
+        std::replace(time.begin(), time.end(), ':', '-');
+        oss << "_" << time;
+    }
+
+    // Subject (cleaned)
+    oss << "_" << cleanSubjectName(info.subject);
+
+    // Section (cleaned)
+    std::string seccion = cleanSeccion(info.seccion);
+    if (!seccion.empty()) {
+        oss << "_" << seccion;
     }
 
     oss << ".mp4";
@@ -103,34 +138,37 @@ std::string FileOrganizer::generateFilename(const ClassInfo& info) const {
     return oss.str();
 }
 
+std::string FileOrganizer::cleanSeccion(const std::string& seccion) const {
+    std::string clean = seccion;
+
+    // Replace accented characters
+    static const std::vector<std::pair<std::string, std::string>> accentMap = {
+        {"á", "a"}, {"é", "e"}, {"í", "i"}, {"ó", "o"}, {"ú", "u"},
+        {"Á", "A"}, {"É", "E"}, {"Í", "I"}, {"Ó", "O"}, {"Ú", "U"},
+        {"ñ", "n"}, {"Ñ", "N"}
+    };
+
+    for (const auto& [from, to] : accentMap) {
+        size_t pos = 0;
+        while ((pos = clean.find(from, pos)) != std::string::npos) {
+            clean.replace(pos, from.length(), to);
+            pos += to.length();
+        }
+    }
+
+    // Replace spaces with dashes for readability in section
+    std::replace(clean.begin(), clean.end(), ' ', '-');
+
+    // Remove problematic characters
+    static const std::regex invalidChars(R"([<>:"/\\|?*])");
+    clean = std::regex_replace(clean, invalidChars, "");
+
+    return clean;
+}
+
 std::string FileOrganizer::determineIdentifier(const ClassInfo& info) const {
-    std::ostringstream oss;
-
-    // Add section type
-    if (!info.seccion.empty()) {
-        std::string seccion = info.seccion;
-        // Abbreviate common section types
-        if (seccion == "TEORÍA" || seccion == "TEORIA") {
-            seccion = "T";
-        } else if (seccion == "LABORATORIO") {
-            seccion = "L";
-        } else if (seccion == "PRÁCTICA" || seccion == "PRACTICA") {
-            seccion = "P";
-        }
-        oss << seccion;
-    }
-
-    // Add modality if virtual
-    if (!info.modalidad.empty()) {
-        std::string modalidad = info.modalidad;
-        std::transform(modalidad.begin(), modalidad.end(), modalidad.begin(), ::toupper);
-        if (modalidad == "VIRTUAL") {
-            if (!oss.str().empty()) oss << "_";
-            oss << "V";
-        }
-    }
-
-    return oss.str();
+    // This function is kept for backward compatibility but not used in new format
+    return cleanSeccion(info.seccion);
 }
 
 } // namespace utec_downloader

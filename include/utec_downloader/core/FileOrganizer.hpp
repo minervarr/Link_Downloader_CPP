@@ -64,6 +64,7 @@ public:
 
 private:
     [[nodiscard]] std::string cleanSubjectName(const std::string& subject) const;
+    [[nodiscard]] std::string cleanSeccion(const std::string& seccion) const;
     [[nodiscard]] std::string generateFilename(const ClassInfo& info) const;
     [[nodiscard]] std::string determineIdentifier(const ClassInfo& info) const;
 
