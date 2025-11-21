@@ -2,9 +2,6 @@
 build/
 cmake-build-*/
 
-# Auto-fetched dependencies (via CMake FetchContent)
-external/ytdlp/
-
 # IDE files
 .idea/
 .vscode/
@@ -34,6 +31,10 @@ downloads/
 
 # Config files with sensitive data
 config/config.txt
+config/cookies.txt
+
+# Data files (user-specific)
+data/
 
 # OS files
 .DS_Store

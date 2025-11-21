@@ -7,3 +7,7 @@
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "external/ytdlp"]
+	path = external/ytdlp
+	url = https://github.com/minervarr/Downloader_Multi.git
+	branch = claude/refactor-ytdlp-library-01B4dxq4oxJ4VjWyT1qS7qnQ

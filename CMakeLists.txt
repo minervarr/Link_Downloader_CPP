@@ -65,45 +65,25 @@ endif()
 # ============================================================================
 # Native yt-dlp C++ Library (Downloader_Multi - supports Zoom!)
 # ============================================================================
-include(FetchContent)
 set(YTDLP_NATIVE_AVAILABLE OFF)
 
 if(USE_NATIVE_YTDLP)
-    # Check if already exists locally
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp/src")
-        message(STATUS "Found local Downloader_Multi library")
-        set(YTDLP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp")
+    # Downloader_Multi is included as a git submodule in external/ytdlp/
+    set(YTDLP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp")
+
+    if(EXISTS "${YTDLP_SOURCE_DIR}/src")
+        message(STATUS "Found Downloader_Multi library (git submodule)")
         set(YTDLP_NATIVE_AVAILABLE ON)
-    else()
-        # Fetch Downloader_Multi (has working Zoom extractor!)
-        message(STATUS "Fetching Downloader_Multi (C++ yt-dlp with Zoom support)...")
-        FetchContent_Declare(
-            downloader_multi
-            GIT_REPOSITORY https://github.com/minervarr/Downloader_Multi.git
-            GIT_TAG        claude/refactor-ytdlp-library-01B4dxq4oxJ4VjWyT1qS7qnQ
-            GIT_SHALLOW    TRUE
-            GIT_SUBMODULES ""  # Don't fetch nested submodules
-            SOURCE_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp"
-        )
 
-        FetchContent_GetProperties(downloader_multi)
-        if(NOT downloader_multi_POPULATED)
-            FetchContent_Populate(downloader_multi)
-            set(YTDLP_SOURCE_DIR "${downloader_multi_SOURCE_DIR}")
-            set(YTDLP_NATIVE_AVAILABLE ON)
-            message(STATUS "Downloader_Multi fetched successfully")
-        endif()
-    endif()
-
-    if(YTDLP_NATIVE_AVAILABLE)
         # Create interface library for headers
-        # The library has headers in src/ directory
         add_library(ytdlp_native INTERFACE)
         target_include_directories(ytdlp_native
             INTERFACE
                 ${YTDLP_SOURCE_DIR}/src
         )
         message(STATUS "Native C++ yt-dlp library enabled (with Zoom support)")
+    else()
+        message(WARNING "Downloader_Multi submodule not found. Run: git submodule update --init --recursive")
     endif()
 endif()
 
