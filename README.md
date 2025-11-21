@@ -20,7 +20,7 @@ A modern C++17 parallel video downloader for UTEC class recordings.
 │   ├── fmt/                    # {fmt} formatting library
 │   ├── googletest/             # Google Test framework
 │   ├── json/                   # nlohmann/json library
-│   └── ytdlp/                  # Native C++ yt-dlp library
+│   └── ytdlp/                  # Native C++ yt-dlp library (auto-fetched)
 ├── include/utec_downloader/    # Public headers
 │   ├── core/
 │   │   ├── ClassInfo.hpp
@@ -44,15 +44,20 @@ A modern C++17 parallel video downloader for UTEC class recordings.
 
 ## Dependencies
 
-All dependencies are included as git submodules (no system libraries required):
+**Git submodules** (included, no system libraries required):
 
 - **nlohmann/json**: JSON parsing
 - **fmt**: Modern C++ formatting
 - **GoogleTest**: Testing framework
-- **yt-dlp_c-library**: Native C++ video downloading (no Python!)
 
-Optional system dependencies:
-- **libcurl**: HTTP downloads (optional, subprocess mode available)
+**Auto-fetched via CMake** (no Python!):
+
+- **yt-dlp_c-library**: Native C++ video downloading
+
+**Optional system dependencies**:
+
+- **libcurl**: Required for native yt-dlp implementation
+- **OpenSSL**: HTTPS support
 
 ## Building
 
@@ -61,10 +66,7 @@ Optional system dependencies:
 git clone --recursive https://github.com/minervarr/Link_Downloader_CPP.git
 cd Link_Downloader_CPP
 
-# Or initialize submodules if already cloned
-git submodule update --init --recursive
-
-# Build
+# Build (CMake will auto-fetch yt-dlp_c-library)
 mkdir build && cd build
 cmake ..
 cmake --build .

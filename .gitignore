@@ -2,6 +2,9 @@
 build/
 cmake-build-*/
 
+# Auto-fetched dependencies (via CMake FetchContent)
+external/ytdlp/
+
 # IDE files
 .idea/
 .vscode/

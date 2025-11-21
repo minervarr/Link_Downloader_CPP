@@ -63,28 +63,51 @@ if(BUILD_TESTS)
 endif()
 
 # ============================================================================
-# Native yt-dlp C++ Library (from submodule)
+# Native yt-dlp C++ Library (via FetchContent - avoids nested submodule issues)
 # ============================================================================
+include(FetchContent)
 set(YTDLP_NATIVE_AVAILABLE OFF)
 
 if(USE_NATIVE_YTDLP)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp/CMakeLists.txt")
-        message(STATUS "Found yt-dlp_c-library submodule")
+    # Check if already exists locally
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp/include/ytdlp")
+        message(STATUS "Found local yt-dlp_c-library")
+        set(YTDLP_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp/include")
+        set(YTDLP_NATIVE_AVAILABLE ON)
+    else()
+        # Try to fetch it (shallow clone, no recursive submodules)
+        message(STATUS "Fetching yt-dlp_c-library...")
+        FetchContent_Declare(
+            ytdlp_library
+            GIT_REPOSITORY https://github.com/minervarr/yt-dlp_c-library.git
+            GIT_TAG        main
+            GIT_SHALLOW    TRUE
+            GIT_SUBMODULES ""  # Don't fetch nested submodules
+            SOURCE_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp"
+        )
 
-        # The library is in early development, so we include it as a header-only
-        # interface for now and will link to it properly when it matures
+        FetchContent_GetProperties(ytdlp_library)
+        if(NOT ytdlp_library_POPULATED)
+            FetchContent_Populate(ytdlp_library)
+            set(YTDLP_INCLUDE_DIR "${ytdlp_library_SOURCE_DIR}/include")
+            set(YTDLP_NATIVE_AVAILABLE ON)
+            message(STATUS "yt-dlp_c-library fetched successfully")
+        endif()
+    endif()
+
+    if(YTDLP_NATIVE_AVAILABLE)
+        # Create interface library for headers
         add_library(ytdlp_native INTERFACE)
         target_include_directories(ytdlp_native
             INTERFACE
-                ${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp/include
+                ${YTDLP_INCLUDE_DIR}
         )
-
-        set(YTDLP_NATIVE_AVAILABLE ON)
         message(STATUS "Native yt-dlp C++ library enabled")
-    else()
-        message(STATUS "yt-dlp_c-library submodule not found - using subprocess fallback")
-        message(STATUS "Run: git submodule update --init --recursive")
     endif()
+endif()
+
+if(NOT YTDLP_NATIVE_AVAILABLE)
+    message(STATUS "Native yt-dlp not available - using subprocess fallback")
 endif()
 
 # ============================================================================
