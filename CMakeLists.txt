@@ -63,46 +63,47 @@ if(BUILD_TESTS)
 endif()
 
 # ============================================================================
-# Native yt-dlp C++ Library (via FetchContent - avoids nested submodule issues)
+# Native yt-dlp C++ Library (Downloader_Multi - supports Zoom!)
 # ============================================================================
 include(FetchContent)
 set(YTDLP_NATIVE_AVAILABLE OFF)
 
 if(USE_NATIVE_YTDLP)
     # Check if already exists locally
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp/include/ytdlp")
-        message(STATUS "Found local yt-dlp_c-library")
-        set(YTDLP_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp/include")
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp/src")
+        message(STATUS "Found local Downloader_Multi library")
+        set(YTDLP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp")
         set(YTDLP_NATIVE_AVAILABLE ON)
     else()
-        # Try to fetch it (shallow clone, no recursive submodules)
-        message(STATUS "Fetching yt-dlp_c-library...")
+        # Fetch Downloader_Multi (has working Zoom extractor!)
+        message(STATUS "Fetching Downloader_Multi (C++ yt-dlp with Zoom support)...")
         FetchContent_Declare(
-            ytdlp_library
-            GIT_REPOSITORY https://github.com/minervarr/yt-dlp_c-library.git
-            GIT_TAG        main
+            downloader_multi
+            GIT_REPOSITORY https://github.com/minervarr/Downloader_Multi.git
+            GIT_TAG        claude/refactor-ytdlp-library-01B4dxq4oxJ4VjWyT1qS7qnQ
             GIT_SHALLOW    TRUE
             GIT_SUBMODULES ""  # Don't fetch nested submodules
             SOURCE_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp"
         )
 
-        FetchContent_GetProperties(ytdlp_library)
-        if(NOT ytdlp_library_POPULATED)
-            FetchContent_Populate(ytdlp_library)
-            set(YTDLP_INCLUDE_DIR "${ytdlp_library_SOURCE_DIR}/include")
+        FetchContent_GetProperties(downloader_multi)
+        if(NOT downloader_multi_POPULATED)
+            FetchContent_Populate(downloader_multi)
+            set(YTDLP_SOURCE_DIR "${downloader_multi_SOURCE_DIR}")
             set(YTDLP_NATIVE_AVAILABLE ON)
-            message(STATUS "yt-dlp_c-library fetched successfully")
+            message(STATUS "Downloader_Multi fetched successfully")
         endif()
     endif()
 
     if(YTDLP_NATIVE_AVAILABLE)
         # Create interface library for headers
+        # The library has headers in src/ directory
         add_library(ytdlp_native INTERFACE)
         target_include_directories(ytdlp_native
             INTERFACE
-                ${YTDLP_INCLUDE_DIR}
+                ${YTDLP_SOURCE_DIR}/src
         )
-        message(STATUS "Native yt-dlp C++ library enabled")
+        message(STATUS "Native C++ yt-dlp library enabled (with Zoom support)")
     endif()
 endif()
 
