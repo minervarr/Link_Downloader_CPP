@@ -7,3 +7,6 @@
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "external/ytdlp"]
+	path = external/ytdlp
+	url = https://github.com/minervarr/yt-dlp_c-library.git

@@ -1,6 +1,10 @@
 #include "utec_downloader/core/SubprocessYtdlp.hpp"
 #include "utec_downloader/utils/Logger.hpp"
 
+#ifdef USE_NATIVE_YTDLP
+#include "utec_downloader/core/NativeYtdlp.hpp"
+#endif
+
 #include <array>
 #include <cstdio>
 #include <regex>
@@ -254,6 +258,17 @@ std::vector<std::string> SubprocessYtdlp::buildArguments(
 std::unique_ptr<IYtdlpDownloader> YtdlpDownloaderFactory::create(
     const std::filesystem::path& binaryPath) {
 
+#ifdef USE_NATIVE_YTDLP
+    // Try native C++ implementation first
+    auto native = std::make_unique<NativeYtdlp>();
+    if (native->isAvailable()) {
+        LOG_INFO("Using native C++ yt-dlp implementation");
+        return native;
+    }
+    LOG_INFO("Native yt-dlp not ready, falling back to subprocess");
+#endif
+
+    // Fallback to subprocess implementation
     std::filesystem::path path = binaryPath.empty() ? "yt-dlp" : binaryPath;
     return std::make_unique<SubprocessYtdlp>(path);
 }

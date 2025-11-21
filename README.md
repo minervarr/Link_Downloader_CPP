@@ -19,7 +19,8 @@ A modern C++17 parallel video downloader for UTEC class recordings.
 ├── external/                   # Git submodules (dependencies)
 │   ├── fmt/                    # {fmt} formatting library
 │   ├── googletest/             # Google Test framework
-│   └── json/                   # nlohmann/json library
+│   ├── json/                   # nlohmann/json library
+│   └── ytdlp/                  # Native C++ yt-dlp library
 ├── include/utec_downloader/    # Public headers
 │   ├── core/
 │   │   ├── ClassInfo.hpp
@@ -28,6 +29,7 @@ A modern C++17 parallel video downloader for UTEC class recordings.
 │   │   ├── DownloadManager.hpp
 │   │   ├── FileOrganizer.hpp
 │   │   ├── IYtdlpDownloader.hpp
+│   │   ├── NativeYtdlp.hpp     # Native C++ downloader
 │   │   ├── SemesterClassifier.hpp
 │   │   └── SubprocessYtdlp.hpp
 │   └── utils/
@@ -47,6 +49,7 @@ All dependencies are included as git submodules (no system libraries required):
 - **nlohmann/json**: JSON parsing
 - **fmt**: Modern C++ formatting
 - **GoogleTest**: Testing framework
+- **yt-dlp_c-library**: Native C++ video downloading (no Python!)
 
 Optional system dependencies:
 - **libcurl**: HTTP downloads (optional, subprocess mode available)

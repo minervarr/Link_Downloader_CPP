@@ -10,6 +10,7 @@ project(utec_downloader
 # ============================================================================
 option(BUILD_TESTS "Build unit tests" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+option(USE_NATIVE_YTDLP "Use native C++ yt-dlp library instead of subprocess" ON)
 
 # ============================================================================
 # C++ Standard Configuration
@@ -62,13 +63,43 @@ if(BUILD_TESTS)
 endif()
 
 # ============================================================================
+# Native yt-dlp C++ Library (from submodule)
+# ============================================================================
+set(YTDLP_NATIVE_AVAILABLE OFF)
+
+if(USE_NATIVE_YTDLP)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp/CMakeLists.txt")
+        message(STATUS "Found yt-dlp_c-library submodule")
+
+        # The library is in early development, so we include it as a header-only
+        # interface for now and will link to it properly when it matures
+        add_library(ytdlp_native INTERFACE)
+        target_include_directories(ytdlp_native
+            INTERFACE
+                ${CMAKE_CURRENT_SOURCE_DIR}/external/ytdlp/include
+        )
+
+        set(YTDLP_NATIVE_AVAILABLE ON)
+        message(STATUS "Native yt-dlp C++ library enabled")
+    else()
+        message(STATUS "yt-dlp_c-library submodule not found - using subprocess fallback")
+        message(STATUS "Run: git submodule update --init --recursive")
+    endif()
+endif()
+
+# ============================================================================
 # System Dependencies
 # ============================================================================
 find_package(Threads REQUIRED)
 find_package(CURL QUIET)
+find_package(OpenSSL QUIET)
 
 if(NOT CURL_FOUND)
     message(STATUS "libcurl not found - download functionality will use subprocess only")
+endif()
+
+if(NOT OpenSSL_FOUND)
+    message(STATUS "OpenSSL not found - some features may be limited")
 endif()
 
 # ============================================================================
@@ -82,6 +113,7 @@ set(LIB_SOURCES
     src/core/FileOrganizer.cpp
     src/core/DownloadManager.cpp
     src/core/SubprocessYtdlp.cpp
+    src/core/NativeYtdlp.cpp
     src/utils/Logger.cpp
 )
 
@@ -102,9 +134,20 @@ target_link_libraries(utec_downloader_core
         Threads::Threads
 )
 
+# Link native yt-dlp library if available
+if(YTDLP_NATIVE_AVAILABLE)
+    target_link_libraries(utec_downloader_core PUBLIC ytdlp_native)
+    target_compile_definitions(utec_downloader_core PUBLIC USE_NATIVE_YTDLP=1)
+endif()
+
 if(CURL_FOUND)
     target_link_libraries(utec_downloader_core PUBLIC CURL::libcurl)
     target_compile_definitions(utec_downloader_core PUBLIC HAS_CURL=1)
+endif()
+
+if(OpenSSL_FOUND)
+    target_link_libraries(utec_downloader_core PUBLIC OpenSSL::SSL OpenSSL::Crypto)
+    target_compile_definitions(utec_downloader_core PUBLIC HAS_OPENSSL=1)
 endif()
 
 # ============================================================================
@@ -163,4 +206,6 @@ message(STATUS "  C++ Compiler:   ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_
 message(STATUS "  C++ Standard:   ${CMAKE_CXX_STANDARD}")
 message(STATUS "  Build tests:    ${BUILD_TESTS}")
 message(STATUS "  CURL found:     ${CURL_FOUND}")
+message(STATUS "  OpenSSL found:  ${OpenSSL_FOUND}")
+message(STATUS "  Native yt-dlp:  ${YTDLP_NATIVE_AVAILABLE}")
 message(STATUS "")
