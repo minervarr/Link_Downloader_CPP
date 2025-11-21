@@ -1,0 +1,37 @@
+# Build directories
+build/
+cmake-build-*/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Compiled files
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Generated files
+compile_commands.json
+
+# Logs
+logs/
+*.log
+
+# Downloads
+downloads/
+
+# Config files with sensitive data
+config/config.txt
+
+# OS files
+.DS_Store
+Thumbs.db
