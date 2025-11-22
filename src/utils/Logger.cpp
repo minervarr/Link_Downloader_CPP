@@ -59,7 +59,11 @@ public:
             now.time_since_epoch()) % 1000;
 
         std::tm tm_buf;
-        localtime_r(&time, &tm_buf);
+#ifdef _WIN32
+        localtime_s(&tm_buf, &time);  // Windows: args reversed
+#else
+        localtime_r(&time, &tm_buf);  // POSIX
+#endif
         std::string timestamp = fmt::format("{:%Y-%m-%d %H:%M:%S}.{:03d}",
                                             tm_buf, ms.count());
 
