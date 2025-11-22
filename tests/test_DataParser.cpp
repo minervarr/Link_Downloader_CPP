@@ -207,3 +207,130 @@ TEST_F(DataParserTest, ValidateClassDataValidatesCorrectly) {
     ClassInfo invalid;
     EXPECT_FALSE(DataParser::validateClassData(invalid));
 }
+
+// Tests for UTEC Extractor JSON formats
+
+TEST_F(DataParserTest, NormalizesDateFromDDMMYYYYFormat) {
+    auto path = createJsonFile(R"({
+        "subject": "Matemáticas",
+        "fecha": "15/04/2024",
+        "url": "https://example.com/video1",
+        "weekNumber": 5
+    })");
+
+    DataParser parser;
+    auto classes = parser.parseFile(path);
+
+    ASSERT_EQ(1u, classes.size());
+    // Date should be normalized to YYYY-MM-DD
+    EXPECT_EQ("2024-04-15", classes[0].fecha);
+}
+
+TEST_F(DataParserTest, PreservesISODateFormat) {
+    auto path = createJsonFile(R"({
+        "subject": "Física",
+        "fecha": "2024-04-15",
+        "url": "https://example.com/video1",
+        "weekNumber": 5
+    })");
+
+    DataParser parser;
+    auto classes = parser.parseFile(path);
+
+    ASSERT_EQ(1u, classes.size());
+    EXPECT_EQ("2024-04-15", classes[0].fecha);
+}
+
+TEST_F(DataParserTest, ParsesAllWeeksWithMetadataFormat) {
+    auto path = createJsonFile(R"({
+        "extractionDate": "2024-04-15",
+        "periodo": "2024-1",
+        "totalRecordings": 3,
+        "totalWeeks": 2,
+        "weeks": {
+            "1": [
+                {"subject": "Math", "fecha": "15/04/2024", "url": "https://a.com", "weekNumber": 1}
+            ],
+            "2": [
+                {"subject": "Physics", "fecha": "16/04/2024", "url": "https://b.com", "weekNumber": 2},
+                {"subject": "Chemistry", "fecha": "17/04/2024", "url": "https://c.com", "weekNumber": 2}
+            ]
+        }
+    })");
+
+    DataParser parser;
+    auto classes = parser.parseFile(path);
+
+    ASSERT_EQ(3u, classes.size());
+    EXPECT_EQ("Math", classes[0].subject);
+    EXPECT_EQ(1, classes[0].weekNumber);
+    EXPECT_EQ("2024-04-15", classes[0].fecha);  // Date normalized
+}
+
+TEST_F(DataParserTest, ParsesAllWeeksWithoutMetadataFormat) {
+    auto path = createJsonFile(R"({
+        "1": [
+            {"subject": "Math", "fecha": "15/04/2024", "url": "https://a.com"}
+        ],
+        "2": [
+            {"subject": "Physics", "fecha": "16/04/2024", "url": "https://b.com"}
+        ]
+    })");
+
+    DataParser parser;
+    auto classes = parser.parseFile(path);
+
+    ASSERT_EQ(2u, classes.size());
+    // Week number should be set from the key
+    EXPECT_EQ(1, classes[0].weekNumber);
+    EXPECT_EQ(2, classes[1].weekNumber);
+}
+
+TEST_F(DataParserTest, ParsesNewUTECExtractorFields) {
+    auto path = createJsonFile(R"({
+        "subject": "Cálculo I - MA101",
+        "fecha": "15/04/2024",
+        "horaInicio": "09:00",
+        "url": "https://zoom.us/rec/123",
+        "weekNumber": 5,
+        "seccion": "AB1",
+        "modalidad": "Virtual",
+        "docente": "Dr. Juan Pérez",
+        "tipo": "Teoría",
+        "estado": "Grabado",
+        "title": "Clase 5 - Derivadas",
+        "timestamp": 1713168000000,
+        "buttonId": "ver_12345"
+    })");
+
+    DataParser parser;
+    auto classes = parser.parseFile(path);
+
+    ASSERT_EQ(1u, classes.size());
+    EXPECT_EQ("Cálculo I - MA101", classes[0].subject);
+    EXPECT_EQ("AB1", classes[0].seccion);
+    EXPECT_EQ("Dr. Juan Pérez", classes[0].docente);
+    EXPECT_EQ("Teoría", classes[0].tipo);
+    EXPECT_EQ("Grabado", classes[0].estado);
+    EXPECT_EQ("Clase 5 - Derivadas", classes[0].title);
+    EXPECT_EQ(1713168000000, classes[0].timestamp);
+    EXPECT_EQ("ver_12345", classes[0].buttonId);
+}
+
+TEST_F(DataParserTest, HandlesEmptyWeeksInMetadataFormat) {
+    auto path = createJsonFile(R"({
+        "weeks": {
+            "1": [],
+            "2": [
+                {"subject": "Physics", "fecha": "16/04/2024", "url": "https://b.com", "weekNumber": 2}
+            ],
+            "3": []
+        }
+    })");
+
+    DataParser parser;
+    auto classes = parser.parseFile(path);
+
+    ASSERT_EQ(1u, classes.size());
+    EXPECT_EQ("Physics", classes[0].subject);
+}

@@ -111,8 +111,8 @@ std::string FileOrganizer::cleanSubjectName(const std::string& subject) const {
 std::string FileOrganizer::generateFilename(const ClassInfo& info) const {
     std::ostringstream oss;
 
-    // Format: fecha_horaInicio_subject_seccion.mp4
-    // Example: 2025-11-19_08-00_Circuitos_Digitales-EL2013_TEORIA-2.mp4
+    // Format: fecha_horaInicio_subject_tipo_seccion.mp4
+    // Example: 2025-11-19_08-00_Circuitos_Digitales-EL2013_Teoria_AB1.mp4
 
     // Date
     oss << info.fecha;
@@ -127,9 +127,15 @@ std::string FileOrganizer::generateFilename(const ClassInfo& info) const {
     // Subject (cleaned)
     oss << "_" << cleanSubjectName(info.subject);
 
-    // Section (cleaned)
+    // Class type (Teoría, Práctica, Laboratorio) - cleaned
+    std::string tipo = cleanSeccion(info.tipo);
+    if (!tipo.empty()) {
+        oss << "_" << tipo;
+    }
+
+    // Section code (AB1, CD2) - if different from tipo
     std::string seccion = cleanSeccion(info.seccion);
-    if (!seccion.empty()) {
+    if (!seccion.empty() && seccion != tipo) {
         oss << "_" << seccion;
     }
 

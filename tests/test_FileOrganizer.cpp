@@ -25,8 +25,10 @@ protected:
         info.horaInicio = "09:00";
         info.url = "https://example.com/video";
         info.weekNumber = 5;
-        info.seccion = "TEORIA";
+        info.seccion = "AB1";
         info.modalidad = "PRESENCIAL";
+        info.tipo = "Teoria";
+        info.docente = "Dr. Juan Perez";
         return info;
     }
 
@@ -115,15 +117,28 @@ TEST_F(FileOrganizerTest, IncludesTimeInFilename) {
     EXPECT_TRUE(filename.find("14-30") != std::string::npos);
 }
 
-TEST_F(FileOrganizerTest, IncludesSectionInFilename) {
+TEST_F(FileOrganizerTest, IncludesTipoInFilename) {
     auto info = createTestClassInfo();
-    info.seccion = "LABORATORIO - 2.01";
+    info.tipo = "Laboratorio";
+    info.seccion = "CD2";
 
     auto path = organizer_->organizeClass(info, "2024-1");
     std::string filename = path.filename().string();
 
-    // Should contain section
-    EXPECT_TRUE(filename.find("LABORATORIO") != std::string::npos);
+    // Should contain tipo (class type)
+    EXPECT_TRUE(filename.find("Laboratorio") != std::string::npos);
+}
+
+TEST_F(FileOrganizerTest, IncludesSeccionInFilename) {
+    auto info = createTestClassInfo();
+    info.tipo = "Teoria";
+    info.seccion = "AB1";
+
+    auto path = organizer_->organizeClass(info, "2024-1");
+    std::string filename = path.filename().string();
+
+    // Should contain seccion (section code)
+    EXPECT_TRUE(filename.find("AB1") != std::string::npos);
 }
 
 TEST_F(FileOrganizerTest, ReplacesSpacesWithUnderscores) {
@@ -197,17 +212,19 @@ TEST_F(FileOrganizerTest, FilenameFormatIsCorrect) {
     info.subject = "Circuitos Digitales - EL2013";
     info.fecha = "2025-11-19";
     info.horaInicio = "08:00";
-    info.seccion = "TEORIA - 2";
+    info.tipo = "Teoria";
+    info.seccion = "AB1";
     info.weekNumber = 14;
 
     auto path = organizer_->organizeClass(info, "2025-2");
     std::string filename = path.filename().string();
 
-    // Expected format: fecha_horaInicio_subject_seccion.mp4
-    // 2025-11-19_08-00_Circuitos_Digitales_-_EL2013_TEORIA---2.mp4
+    // Expected format: fecha_horaInicio_subject_tipo_seccion.mp4
+    // Example: 2025-11-19_08-00_Circuitos_Digitales_-_EL2013_Teoria_AB1.mp4
     EXPECT_TRUE(filename.find("2025-11-19") != std::string::npos);
     EXPECT_TRUE(filename.find("08-00") != std::string::npos);
     EXPECT_TRUE(filename.find("Circuitos") != std::string::npos);
-    EXPECT_TRUE(filename.find("TEORIA") != std::string::npos);
+    EXPECT_TRUE(filename.find("Teoria") != std::string::npos);
+    EXPECT_TRUE(filename.find("AB1") != std::string::npos);
     EXPECT_EQ(".mp4", path.extension().string());
 }

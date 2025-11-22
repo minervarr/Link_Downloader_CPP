@@ -4,6 +4,7 @@
 #include <string>
 #include <optional>
 #include <vector>
+#include <cstdint>
 
 namespace utec_downloader {
 
@@ -12,15 +13,25 @@ namespace utec_downloader {
  *
  * Contains all necessary information about a class session including
  * subject, date, URL, and classification details.
+ * Aligned with UTEC Extractor JSON structure specification.
  */
 struct ClassInfo {
-    std::string subject;      ///< Course name (e.g., "Matemáticas I")
-    std::string fecha;        ///< Date in YYYY-MM-DD format
+    // Core fields
+    std::string subject;      ///< Course name with code (e.g., "Matemáticas I - MA101")
+    std::string fecha;        ///< Date in YYYY-MM-DD format (internally normalized)
     std::string horaInicio;   ///< Start time in HH:MM format (e.g., "09:00")
-    std::string url;          ///< Video URL
-    int weekNumber{0};        ///< Week number in the semester
-    std::string seccion;      ///< Section type: "TEORÍA", "LABORATORIO", etc.
-    std::string modalidad;    ///< Delivery mode: "PRESENCIAL", "VIRTUAL"
+    std::string url;          ///< Complete Zoom recording link
+    int weekNumber{0};        ///< Academic week identifier (1-20)
+    std::string seccion;      ///< Class section (e.g., "AB1", "CD2")
+    std::string modalidad;    ///< Delivery method: "Virtual", "Presencial", "Híbrido"
+
+    // New fields from UTEC Extractor
+    std::string docente;      ///< Instructor name
+    std::string tipo;         ///< Class category: "Teoría", "Práctica", "Laboratorio"
+    std::string estado;       ///< Status: "Grabado", "Pendiente"
+    std::string title;        ///< Recording name from Zoom
+    int64_t timestamp{0};     ///< Milliseconds since Unix epoch
+    std::string buttonId;     ///< Internal identifier (ver_XXXXX format)
 
     /**
      * @brief Validates that all required fields are properly set
